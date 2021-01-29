@@ -1,42 +1,24 @@
+// include dependencies
 const express = require('express');
-const morgan = require("morgan");
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
-// Create Express Server
-const app = express();
-
-// Configuration
-const PORT = 3000;
-const HOST = "localhost";
-const API_SERVICE_URL = "https://jsonplaceholder.typicode.com";
-
-// Logging
-app.use(morgan('dev'));
-
-// Info GET endpoint
-app.get('/info', (req, res, next) => {
-    res.send('This is a proxy service which proxies to JSONPlaceholder API.');
-});
-
-// Authorization
-app.use('', (req, res, next) => {
-    if (req.headers.authorization) {
-        next();
-    } else {
-        res.sendStatus(403);
-    }
-});
-
-// Proxy endpoints
-app.use('/json_placeholder', createProxyMiddleware({
-    target: API_SERVICE_URL,
-    changeOrigin: true,
-    pathRewrite: {
-        [`^/json_placeholder`]: '',
+// proxy middleware options
+const options = {
+    target: 'https://www.famousfootwear.com', // target host
+    changeOrigin: true, // needed for virtual hosted sites
+    ws: true, // proxy websockets
+    router: {
+        // when request.headers.host == 'dev.localhost:3000',
+        // override target 'http://www.example.org' to 'http://localhost:8000'
+        'dev.localhost:3000': 'http://localhost:8000',
     },
-}));
+    autoRewrite: true,
+};
 
-// Start Proxy
-app.listen(PORT, HOST, () => {
-    console.log(`Starting Proxy at ${HOST}:${PORT}`);
-});
+// create the proxy (without context)
+const exampleProxy = createProxyMiddleware(options);
+
+// mount `exampleProxy` in web server
+const app = express();
+app.use('*', exampleProxy);
+app.listen(3000);
